@@ -3,6 +3,8 @@ from math import sqrt
 from typing import NamedTuple, List, Dict, Optional
 from sudoku_graphics import SudokuGraphics
 import numpy as np
+
+import cProfile
 # Note: numpy does not fully support type annotations.
 # There seems to have been some discusion about it on GitHubb
 # Could be something cool to contribute to..........
@@ -193,10 +195,10 @@ class SudokuConstraint(Constraint[BoardLocation, int]):
 
 if __name__ == '__main__':
     # create a blank sudoku board:
-    s = Sudoku(size=9, graphics=True)
+    s = Sudoku(size=9, graphics=False)
     # fill it with pre-defined numbers
     # s.fill_random(0.8)
     # solve it
-    s.solve()
+    cProfile.run('s.solve()')
     # s.g.stay_open()
 
