@@ -24,15 +24,15 @@ TEXT_COLORS = ['red', 'orange red', 'tomato', 'light coral',
 
 
 class SudokuCell(Rectangle):
-    def __init__(self, location, value):
+    def __init__(self, location, value) -> None:
         self.location = location
-        self.value = value
-        self.age = 0
+        self.value: int = value
+        self.age: int = 0
         top_left: Point = Point(self.location.row * GRID_SIZE,
                                 self.location.column * GRID_SIZE)
         bottom_right: Point = Point(top_left.x + GRID_SIZE,
                                     top_left.y + GRID_SIZE)
-        center = Point((top_left.x + bottom_right.x) / 2,
+        center: Point = Point((top_left.x + bottom_right.x) / 2,
                        (top_left.y + bottom_right.y) / 2)
         super().__init__(top_left, bottom_right)
         self.setFill(BACKGROUND_COLOR)
@@ -46,10 +46,10 @@ class SudokuGraphics:
     # TODO: Make type hints work for modules I'm not importing
     def __init__(self, puzzle):
         self.puzzle = puzzle
-        self.window_size = GRID_SIZE * self.puzzle.size
-        self.window = GraphWin("Sudoku", self.window_size,
-                               self.window_size, autoflush=False)
-        self.grid = self.puzzle.grid
+        self.window_size: int = GRID_SIZE * self.puzzle.size
+        self.window: GraphWin = GraphWin("Sudoku", self.window_size,
+                                         self.window_size, autoflush=False)
+        self.assignment = self.puzzle.assignment
         self.locations = self.puzzle.locations
         self.cells = dict()
         self.num_colors = len(TEXT_COLORS)
@@ -59,7 +59,7 @@ class SudokuGraphics:
         # and draw them
         for location in self.locations:
             self.cells[location] =\
-                SudokuCell(location, self.grid[location.row, location.column])
+                SudokuCell(location, self.assignment[location.row, location.column])
 
         self.grid_lines = []
         subgrid_px = sqrt(self.puzzle.size) * GRID_SIZE

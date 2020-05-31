@@ -30,39 +30,42 @@ class BoardLocation(NamedTuple):
 #   code to get a comparison of how long things actually take.
 
 
+def dict_to_array(dictionary: Dict[BoardLocation, int], size: int) -> np.array:
+    array = np.zeros((size, size), dtype=np.int8)
+    for key in dictionary:
+        array[key] = dictionary[key]
+    return array
+
+
 class Sudoku:
-    # TODO: See if I can clean up this class definition and stay
-    #   within the CSP framework. I currently have self.grid (numpy array)
-    #   self.locations(list of BoardLocations), and self._assignment
-    #   (format for passing info to backtracking search and constraints)
     def __init__(self, size: Optional[int] = 9,
-                 values: Optional[Dict[BoardLocation, int]] = None,
+                 assignment: Optional[np.array] = None,
                  graphics: Optional = False):
         if sqrt(size) % 1 != 0:
             raise ValueError('Size of Sudoku board must be a perfect square!')
         self.size: int = size
-        self.grid = np.zeros((size, size), dtype=int)
-        self.locations: List = []
         self.domain = list(range(1, self.size + 1))
-        if values:
-            for location in values:
-                self.grid[location.row, location.column] = values[location]
-                self.locations.append(location)
-        else:
-            for row in range(0, self.size):
-                for column in range(0, self.size):
-                    self.locations.append(BoardLocation(row, column))
-        self.g = SudokuGraphics(self) if graphics else None
+        if assignment is None:
+            self.assignment = np.zeros((size, size), dtype=np.int8)
+        elif type(assignment) is dict:
+            self.assignment = dict_to_array(assignment, self.size)
+        self.locations: List[BoardLocation] = [BoardLocation(row, column)
+                                               for row, r in enumerate(self.assignment)
+                                               for column, _ in enumerate(r)]
+        self.graphics = SudokuGraphics(self) if graphics else None
 
-    @property
-    def _assignment(self) -> Dict[BoardLocation, int]:
-        assignment: Dict[BoardLocation, int] = dict()
-        for location in self.locations:
-            assignment[location] = self.grid[location.row, location.column]
-        return assignment
+    def __len__(self):
+        # return the number of locations in the numpy array that are not zero
+        return len([cell for row in self.assignment for cell in row if cell != 0])
+
+    def __contains__(self, item: BoardLocation):
+        # return whether the item (location) is zero
+        if item not in self.locations:
+            raise IndexError(f'Looking for out of bounds {item} in Sudoku board')
+        return self.assignment[item] != 0
 
     def __repr__(self):
-        return repr(self.grid)
+        return repr(self.assignment)
 
     def solve(self, shuffle_variables=False, shuffle_domains=True):
         # variables: List[BoardLocation] = self.locations
@@ -84,12 +87,14 @@ class Sudoku:
         #   be satisfied because the random inputs are currently not
         #   valid (they do not themselves do a backtracking search)
 
-        solution = Sudoku(values=csp.backtracking_search(graphics=self.g))
-        if self.g:
-            self.g.stay_open()
+        self.assignment = Sudoku(size=self.size, assignment=csp.backtracking_search(graphics=self.graphics))
+        if self.graphics:
+            self.graphics.stay_open()
         else:
-            print(solution)
+            print(self.assignment)
 
+    # TODO: Make this into a class method. It can then be called as
+    #   S = Sudoku.fill_random(0.5) to create a random puzzle
     def fill_random(self, percent_to_fill: float):
         # TODO: Make this a version of csp.backtracking_search.
         #   I think that this can be done simply with two steps:
@@ -148,42 +153,33 @@ class SudokuConstraint(Constraint[BoardLocation, int]):
     def __init__(self, board_locations, size):
         super().__init__(board_locations) # variables
         self.size = size
-        # self.board = np.zeros((self.size, self.size), dtype=int)
-        # TODO: Figure out why I can't make an empty array once
-        #   Using the code above in satisfied() produces an empty matrix
-        #   as the solution.
 
-    def satisfied(self, assignment: Dict[BoardLocation, int]) -> bool:
-        # TODO: Chance data type to int8. Consider running
-        #   a comparison to see if it speeds things up
-        board = np.zeros((self.size, self.size), dtype=int)
-        # fill up the array
-        if assignment is not None:
-            for location in assignment:
-                board[location.row, location.column] = assignment[location]
+    def satisfied(self, assignment: np.array) -> bool:
+        # first round through backtracking_search will try to
+        # pass a dict with the first value. This corrects
+        # it to be an empty sudoku board
+        if type(assignment) is dict:
+            assignment = dict_to_array(assignment, self.size)
 
         # test rows on board
-        for row in board:
-            if not self.test_unique(row):
+        for row in assignment:
+            if not self._test_unique(row):
                 return False
         # test cols on board.T
-        for column in board.T:
-            if not self.test_unique(column):
+        for column in assignment.T:
+            if not self._test_unique(column):
                 return False
         # test the subgrids
         s = int(sqrt(self.size)) # subgrid size
         for r in range(s):
             for c in range(s):
-                sub_grid = board[s*r:s*(r+1), s*c:s*(c+1)]
-                if not self.test_unique(sub_grid.flatten()):
+                sub_grid: np.array = assignment[s*r:s*(r+1), s*c:s*(c+1)]
+                if not self._test_unique(sub_grid.flatten()):
                     return False
         return True
 
-    # TODO: Determine if this needs to be nested in the satisfied()
-    #   constraint, left as a static method, or moved outside
-    #   of this class
     @staticmethod
-    def test_unique(array: np.array):
+    def _test_unique(array: np.array):
         # remove zeros from the array
         array = list(filter(lambda x: x != 0, array))
         value_counts = np.unique(array, return_counts=True)[1]
@@ -198,11 +194,9 @@ class SudokuConstraint(Constraint[BoardLocation, int]):
 if __name__ == '__main__':
     # create a blank sudoku board:
     s = Sudoku(size=9, graphics=True)
-
     # fill it with pre-defined numbers
     # s.fill_random(0.8)
     # solve it
     s.solve()
-    s.g.stay_open()
-    print(s)
+    # s.g.stay_open()
 
