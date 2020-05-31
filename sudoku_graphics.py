@@ -1,5 +1,6 @@
 from graphics import GraphWin, Rectangle, Point, Line, Text
 from math import sqrt
+import time
 # TODO: Be consistent with rows & columns
 # TODO: Make bold numbers for permanent assignments
 # TODO: Graduate from graphics.py to using TKinter directly
@@ -28,6 +29,7 @@ class SudokuCell(Rectangle):
         self.location = location
         self.value: int = value
         self.age: int = 0
+        self.preset: bool = False
         top_left: Point = Point(self.location.row * GRID_SIZE,
                                 self.location.column * GRID_SIZE)
         bottom_right: Point = Point(top_left.x + GRID_SIZE,
@@ -75,15 +77,28 @@ class SudokuGraphics:
             line.setWidth(GRID_WIDTH_MAJOR)
             line.setOutline(GRID_COLOR_MAJOR)
         self.draw_background()
-        self.fill_cells()
+        self.set_presets(self.puzzle.preset)
+        # self.fill_cells()
+
+    def set_presets(self, preset_assignment) -> None:
+        for location in self.locations:
+            if preset_assignment[location] != 0:
+                self.cells[location].text.undraw()
+                self.cells[location].preset = True
+                self.cells[location].value = preset_assignment[location]
+                self.cells[location].text.setText(str(preset_assignment[location]))
+                self.cells[location].text.setStyle('bold')
+                self.cells[location].text.setTextColor('gray82')
+                self.cells[location].text.draw(self.window)
+        self.window.update()
 
     def update_cells(self, new_assignment):
-        # new assignment is dict of locations and values
-
-        for location in new_assignment:
-            if new_assignment[location] == 0:
+        for location in self.locations:
+            if self.cells[location].preset:
                 continue
             self.cells[location].text.undraw()
+            if new_assignment[location] == 0:
+                continue
             if new_assignment[location] != self.cells[location].value:
                 self.cells[location].age = 0
                 self.cells[location].value = new_assignment[location]
@@ -95,6 +110,7 @@ class SudokuGraphics:
             self.cells[location].text.setFill(TEXT_COLORS[self.cells[location].age])
             self.cells[location].text.draw(self.window)
 
+        # time.sleep(0.1)
         self.window.update()
 
     def draw_background(self):
