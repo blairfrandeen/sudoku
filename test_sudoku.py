@@ -86,27 +86,33 @@ class GraphicsTest(unittest.TestCase):
         s = Sudoku(preset=puzzle8, graphics=True)
         solution = s.solve()
         self.assertIsNotNone(solution)
+        s.graphics.window.close()
 
     def test_preset_medium(self):
         s = Sudoku(preset=puzzle6, graphics=True)
         solution = s.solve()
         self.assertIsNotNone(solution)
+        s.graphics.window.close()
 
     def test_preset_hard(self):
         s = Sudoku(preset=puzzle4, graphics=True)
         solution = s.solve()
         self.assertIsNotNone(solution)
+        s.graphics.stay_open()
+        s.graphics.window.close()
 
     def test_generate(self):
         s = Sudoku(graphics=True)
         s.generate(1)
         self.assertTrue(s.consistent(s.preset))
+        s.graphics.window.close()
 
     def test_generate_and_solve(self):
-        s = Sudoku(graphics = True)
+        s = Sudoku(graphics=True)
         s.generate(0.08)
         s.solve()
         self.assertTrue(s.consistent(s.assignment + s.preset))
+        s.graphics.window.close()
 
 
 if __name__ == '__main__':

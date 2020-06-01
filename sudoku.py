@@ -129,10 +129,10 @@ if __name__ == '__main__':
     # create a blank sudoku board:
     # s.graphics.update_cells(s.assignment)
     # cProfile.run('sol = s.solve()')
-    s = Sudoku(size=9, graphics=False, preset=None)
-    s.generate(0.6)
+    s = Sudoku(size=9, graphics=True, preset=None)
+    s.generate(0.2)
     print(s.preset)
     sol = s.solve()
     print(sol + s.preset)
-    # s.graphics.stay_open()
+    s.graphics.stay_open()
 
